@@ -28,8 +28,8 @@
 
     /* ── HEADER ── */
     .header {
-      background: var(--bg-deep);
-      padding: 28px 16px 8px;
+      background: linear-gradient(135deg, #0d1b3e 0%, #2b5be8 100%);
+      padding: 28px 16px 20px;
       text-align: center;
     }
     .header-inner {
@@ -73,6 +73,7 @@
       border: 1px solid var(--card-border);
       border-radius: 14px;
       padding: clamp(14px, 3vw, 20px) clamp(12px, 3vw, 18px);
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
       text-decoration: none;
       color: inherit;
       cursor: pointer;
@@ -105,7 +106,7 @@
     .namn {
       font-size: clamp(16px, 4.5vw, 24px);
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -171,7 +172,7 @@
     }
     .detail-header h2 {
       font-size: clamp(20px, 5vw, 28px);
-      color: #fff;
+      color: var(--text);
       margin-bottom: 2px;
     }
     .detail-meta {
@@ -239,7 +240,7 @@
     .mtip {
       font-size: clamp(14px, 3.5vw, 18px);
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       min-width: 28px;
       text-align: center;
     }
@@ -302,10 +303,10 @@ const FACIT_SHEET = 'Facit';
 const MATCH_COUNT = 13;
 
 const COL_NAMN        = 2;
-const COL_MATCH_START = 5;
-const COL_VMMASTARE   = 18;
-const COL_SKYTTEKUNG  = 19;
-const COL_MAL         = 20;
+const COL_MATCH_START = 4;
+const COL_VMMASTARE   = 17;
+const COL_SKYTTEKUNG  = 18;
+const COL_MAL         = 19;
 // ────────────────────────────────────────────────────────────
 
 function sheetUrl(sheetName) {
