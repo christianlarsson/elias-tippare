@@ -156,7 +156,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: #ffffff;
+      color: var(--accent);
       font-size: clamp(14px, 3.5vw, 16px);
       font-weight: 600;
       cursor: pointer;
@@ -370,7 +370,7 @@ async function loadData() {
   cachedMatchNames  = svarHeaders.slice(COL_MATCH_START, COL_MATCH_START + MATCH_COUNT)
     .map(h => h.replace(/^Matchresultat\s*\[/, '').replace(/\]$/, ''));
 
-  const facitData       = facitRows[1] || [];
+  const facitData       = (facitRows.length > 1 ? facitRows[1] : null) || new Array(16).fill('');
   cachedFacitRow        = facitData;
   const facitMatches = facitData.slice(0, MATCH_COUNT).map(v => {
     const s = String(v || '').trim();
@@ -510,7 +510,7 @@ function showDetail(namn) {
     const facitTxt = speladAv ? m.facit : '–';
     const cls      = !speladAv ? 'mrow pending' : m.ratt ? 'mrow correct' : 'mrow wrong';
     return `<div class="${cls}">
-      <span class="mname">${esc(cachedMatchNames[i])}</span>
+      <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
       <span class="mtip">${m.svar || '–'}</span>
       <span class="mfac">${facitTxt}</span>
       <span class="mic">${icon}</span>
