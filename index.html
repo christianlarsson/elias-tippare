@@ -80,7 +80,7 @@
       transition: background .15s, border-color .15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .row:hover, .row:active { background: #2a7a59; border-color: var(--green-accent); }
+    .row:hover, .row:active { background: #eef1fb; border-color: var(--accent); }
 
     .row.top1 { border-color: #d4af37; background: #fffbf0; }
     .row.top2 { border-color: #a8a8a8; background: #fafafa; }
@@ -123,7 +123,7 @@
     .pts {
       font-size: clamp(28px, 8vw, 48px);
       font-weight: 800;
-      color: var(--accent);
+      color: var(--accent-dark);
       min-width: clamp(40px, 10vw, 60px);
       text-align: right;
       flex-shrink: 0;
@@ -440,14 +440,16 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function getMedal(rank) {
+function getMedal(rank, poang) {
+  if (poang === 0) return '';
   if (rank === 1) return '🥇';
   if (rank === 2) return '🥈';
   if (rank === 3) return '🥉';
   return '';
 }
 
-function getTopClass(rank) {
+function getTopClass(rank, poang) {
+  if (poang === 0) return '';
   if (rank === 1) return ' top1';
   if (rank === 2) return ' top2';
   if (rank === 3) return ' top3';
@@ -478,7 +480,7 @@ function renderLeaderboard(scores, filter) {
 
   lb.innerHTML = filtered.map((s, i) => {
     const medal    = getMedal(s.rank);
-    const topClass = getTopClass(s.rank);
+    const topClass = getTopClass(s.rank, s.poang);
     const rankDisp = medal || s.rank;
     return `<div class="row${topClass}" onclick="showDetail('${esc(s.namn)}')">
       <span class="rank">${rankDisp}</span>
