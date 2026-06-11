@@ -479,7 +479,7 @@ function renderLeaderboard(scores, filter) {
   }
 
   lb.innerHTML = filtered.map((s, i) => {
-    const medal    = getMedal(s.rank);
+    const medal    = getMedal(s.rank, s.poang);
     const topClass = getTopClass(s.rank, s.poang);
     const rankDisp = medal || s.rank;
     return `<div class="row${topClass}" onclick="showDetail('${esc(s.namn)}')">
