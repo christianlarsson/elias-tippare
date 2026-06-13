@@ -342,6 +342,17 @@
       font-size: clamp(12px, 3vw, 15px);
       color: var(--text-muted);
     }
+    .ch-name {
+      font-size: clamp(11px, 2.5vw, 13px);
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .03em;
+    }
+    .ch-name-sm {
+      font-size: clamp(10px, 2.5vw, 12px);
+      font-weight: 700;
+      color: var(--accent);
+    }
     .ch-logos {
       display: flex;
       align-items: center;
@@ -414,6 +425,7 @@ const CHANNEL_LOGOS = {
 };
 
 const PLAY_CHANNEL = {"svt1": "svtplay", "svt2": "svtplay", "tv4": "tv4play"};
+const CHANNEL_NAMES = {"svt1": "SVT1", "svt2": "SVT2", "tv4": "TV4"};
 
 // ── CONFIG ──────────────────────────────────────────────────
 const SHEET_ID    = '1ZVTnUpKejCBqqD7a04AOqB8eeLU5YTULq9Z6VHza_EY';
@@ -613,9 +625,7 @@ function renderNextMatch(scores) {
     <div class="next-match-name">${match.name}</div>
     <div class="next-match-meta">
       <span class="next-match-time">${timeStr}</span>
-      <span class="ch-logos">
-        ${chLogo ? `<img class="ch-logo" src="${chLogo}" alt="${match.ch}">` : ''}
-      </span>
+<span class="ch-name">${CHANNEL_NAMES[match.ch] || match.ch.toUpperCase()}</span>
     </div>
     <div class="next-match-dist">
       <div class="dist-item">
@@ -720,7 +730,7 @@ function showDetail(namn) {
       <div style="flex:1;min-width:0">
         <div class="match-time-row">
           <span>${timeStr}</span>
-          ${chLogo ? `<img class="ch-logo-sm" src="${chLogo}" alt="${sched.ch}">` : ''}
+          <span class="ch-name-sm">${CHANNEL_NAMES[sched.ch] || sched.ch.toUpperCase()}</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
