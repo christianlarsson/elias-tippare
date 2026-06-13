@@ -255,6 +255,41 @@
       min-width: 24px;
       text-align: center;
     }
+    .dist {
+      display: flex;
+      gap: 6px;
+      padding: 6px 0 2px;
+      font-size: clamp(10px, 2.5vw, 12px);
+      color: var(--text-muted);
+    }
+    .dist-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+    .dist-label {
+      font-weight: 700;
+      min-width: 12px;
+      color: var(--text);
+    }
+    .dist-bar-wrap {
+      flex: 1;
+      background: var(--card-border);
+      border-radius: 3px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .dist-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--accent);
+      transition: width .3s;
+    }
+    .dist-pct {
+      min-width: 28px;
+      text-align: right;
+    }
 
     /* ── LOADING / ERROR ── */
     #status {
@@ -491,6 +526,24 @@ function renderLeaderboard(scores, filter) {
       <span class="pts">${s.poang}<br><span class="pts-unit">rätt</span></span>
     </div>`;
   }).join('');
+}
+
+function calcDist(matchIndex) {
+  const counts = { '1': 0, 'X': 0, '2': 0 };
+  let total = 0;
+  cachedScores.forEach(s => {
+    const svar = s.matchDetaljer[matchIndex]?.svar;
+    if (svar && counts[svar] !== undefined) {
+      counts[svar]++;
+      total++;
+    }
+  });
+  return {
+    '1': total ? Math.round(counts['1'] / total * 100) : 0,
+    'X': total ? Math.round(counts['X'] / total * 100) : 0,
+    '2': total ? Math.round(counts['2'] / total * 100) : 0,
+    total
+  };
 }
 
 function showDetail(namn) {
