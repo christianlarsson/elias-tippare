@@ -562,11 +562,33 @@ function showDetail(namn) {
     const icon     = !speladAv ? '⏳' : m.ratt ? '✅' : '❌';
     const facitTxt = speladAv ? m.facit : '–';
     const cls      = !speladAv ? 'mrow pending' : m.ratt ? 'mrow correct' : 'mrow wrong';
+    const dist     = calcDist(i);
     return `<div class="${cls}">
-      <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
-      <span class="mtip">${m.svar || '–'}</span>
-      <span class="mfac">${facitTxt}</span>
-      <span class="mic">${icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
+          <span class="mtip">${m.svar || '–'}</span>
+          <span class="mfac">${facitTxt}</span>
+          <span class="mic">${icon}</span>
+        </div>
+        <div class="dist">
+          <div class="dist-item">
+            <span class="dist-label">1</span>
+            <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['1']}%"></div></div>
+            <span class="dist-pct">${dist['1']}%</span>
+          </div>
+          <div class="dist-item">
+            <span class="dist-label">X</span>
+            <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['X']}%"></div></div>
+            <span class="dist-pct">${dist['X']}%</span>
+          </div>
+          <div class="dist-item">
+            <span class="dist-label">2</span>
+            <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['2']}%"></div></div>
+            <span class="dist-pct">${dist['2']}%</span>
+          </div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 
