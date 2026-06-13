@@ -307,6 +307,73 @@
       margin: 0 auto 16px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── NEXT MATCH CARD ── */
+    .next-match-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .next-match-label {
+      font-size: clamp(9px, 2.5vw, 11px);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .next-match-name {
+      font-size: clamp(16px, 4vw, 22px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .next-match-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .next-match-time {
+      font-size: clamp(12px, 3vw, 15px);
+      color: var(--text-muted);
+    }
+    .ch-logos {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ch-logo {
+      height: 20px;
+      width: auto;
+      border-radius: 3px;
+    }
+    .next-match-dist {
+      display: flex;
+      gap: 8px;
+    }
+    .next-match-dist .dist-item {
+      flex: 1;
+    }
+
+    /* ── MATCH TIME IN DETAIL VIEW ── */
+    .match-time-row {
+      font-size: clamp(10px, 2.5vw, 12px);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .ch-logo-sm {
+      height: 14px;
+      width: auto;
+      border-radius: 2px;
+    }
   </style>
 </head>
 <body>
@@ -321,6 +388,7 @@
 
 <div class="container">
   <div id="status"><div class="spinner"></div>Hämtar resultat...</div>
+  <div id="next-match-wrap" style="display:none"></div>
   <div id="search-wrap" style="display:none; margin-bottom:12px">
     <input id="search-box" type="search" placeholder="🔍  Sök namn..." autocomplete="off"
       oninput="renderLeaderboard(cachedScores, this.value)"
@@ -331,6 +399,18 @@
 </div>
 
 <script>
+const MATCH_SCHEDULE = [{"nr": 1, "name": "Brasilien \u2013 Marocko", "date": "2026-06-14", "time": "00:00", "ch": "svt1"}, {"nr": 2, "name": "Sverige \u2013 Tunisien", "date": "2026-06-15", "time": "04:00", "ch": "svt1"}, {"nr": 3, "name": "England \u2013 Kroatien", "date": "2026-06-17", "time": "22:00", "ch": "tv4"}, {"nr": 4, "name": "Nederl\u00e4nderna \u2013 Sverige", "date": "2026-06-20", "time": "19:00", "ch": "tv4"}, {"nr": 5, "name": "Tyskland \u2013 Elfenbenskusten", "date": "2026-06-20", "time": "22:00", "ch": "tv4"}, {"nr": 6, "name": "Argentina \u2013 \u00d6sterrike", "date": "2026-06-22", "time": "19:00", "ch": "svt1"}, {"nr": 7, "name": "Skottland \u2013 Brasilien", "date": "2026-06-25", "time": "00:00", "ch": "tv4"}, {"nr": 8, "name": "Japan \u2013 Sverige", "date": "2026-06-26", "time": "01:00", "ch": "svt1"}, {"nr": 9, "name": "Turkiet \u2013 USA", "date": "2026-06-26", "time": "04:00", "ch": "tv4"}, {"nr": 10, "name": "Norge \u2013 Frankrike", "date": "2026-06-26", "time": "21:00", "ch": "tv4"}, {"nr": 11, "name": "Uruguay \u2013 Spanien", "date": "2026-06-27", "time": "02:00", "ch": "tv4"}, {"nr": 12, "name": "Kroatien \u2013 Ghana", "date": "2026-06-27", "time": "23:00", "ch": "svt2"}, {"nr": 13, "name": "Colombia \u2013 Portugal", "date": "2026-06-28", "time": "01:30", "ch": "tv4"}];
+
+const CHANNEL_LOGOS = {
+  "svt1": "svt1.png",
+  "svt2": "svt2.png",
+  "svtplay": "svtplay.png",
+  "tv4": "tv4.png",
+  "tv4play": "tv4play.png",
+};
+
+const PLAY_CHANNEL = {"svt1": "svtplay", "svt2": "svtplay", "tv4": "tv4play"};
+
 // ── CONFIG ──────────────────────────────────────────────────
 const SHEET_ID    = '1ZVTnUpKejCBqqD7a04AOqB8eeLU5YTULq9Z6VHza_EY';
 const SVAR_SHEET  = 'Formulärsvar 1';
@@ -491,6 +571,69 @@ function getTopClass(rank, poang) {
   return '';
 }
 
+function getDatetimeStr(match) {
+  // e.g. "2026-06-14" + "00:00" => date string for display
+  const days = ['sön','mån','tis','ons','tor','fre','lör'];
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  const d = new Date(match.date + 'T' + match.time + ':00');
+  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + match.time;
+}
+
+function renderNextMatch(scores) {
+  const wrap = document.getElementById('next-match-wrap');
+  const now  = new Date();
+
+  // Find first match that hasn't started yet
+  let nextIdx = -1;
+  for (let i = 0; i < MATCH_SCHEDULE.length; i++) {
+    const m = MATCH_SCHEDULE[i];
+    const matchTime = new Date(m.date + 'T' + m.time + ':00');
+    if (matchTime > now) { nextIdx = i; break; }
+  }
+
+  if (nextIdx === -1) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  const match = MATCH_SCHEDULE[nextIdx];
+  const dist  = calcDist(nextIdx);
+  const chLogo    = CHANNEL_LOGOS[match.ch] || '';
+  const playKey   = PLAY_CHANNEL[match.ch];
+  const playLogo  = playKey ? CHANNEL_LOGOS[playKey] : '';
+  const timeStr   = getDatetimeStr(match);
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div class="next-match-card">
+    <div class="next-match-label">⚽ Nästa match · Match ${match.nr} av 13</div>
+    <div class="next-match-name">${match.name}</div>
+    <div class="next-match-meta">
+      <span class="next-match-time">${timeStr}</span>
+      <span class="ch-logos">
+        ${chLogo ? `<img class="ch-logo" src="${chLogo}" alt="${match.ch}">` : ''}
+        ${playLogo ? `<img class="ch-logo" src="${playLogo}" alt="play">` : ''}
+      </span>
+    </div>
+    <div class="next-match-dist">
+      <div class="dist-item">
+        <span class="dist-label">1</span>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['1']}%"></div></div>
+        <span class="dist-pct">${dist['1']}%</span>
+      </div>
+      <div class="dist-item">
+        <span class="dist-label">X</span>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['X']}%"></div></div>
+        <span class="dist-pct">${dist['X']}%</span>
+      </div>
+      <div class="dist-item">
+        <span class="dist-label">2</span>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${dist['2']}%"></div></div>
+        <span class="dist-pct">${dist['2']}%</span>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderLeaderboard(scores, filter) {
   if (filter !== undefined) currentFilter = filter;
 
@@ -500,6 +643,7 @@ function renderLeaderboard(scores, filter) {
   detail.style.display = 'none';
   lb.style.display     = 'flex';
   document.getElementById('search-wrap').style.display = 'block';
+  renderNextMatch(scores);
 
   // Restore filter input value
   if (search) search.value = currentFilter;
@@ -553,6 +697,7 @@ function showDetail(namn) {
   const lb  = document.getElementById('leaderboard');
   const det = document.getElementById('detail');
   document.getElementById('search-wrap').style.display  = 'none';
+  document.getElementById('next-match-wrap').style.display = 'none';
 
   lb.style.display  = 'none';
   det.style.display = 'block';
@@ -563,8 +708,18 @@ function showDetail(namn) {
     const facitTxt = speladAv ? m.facit : '–';
     const cls      = !speladAv ? 'mrow pending' : m.ratt ? 'mrow correct' : 'mrow wrong';
     const dist     = calcDist(i);
+    const sched    = MATCH_SCHEDULE[i];
+    const chLogo   = sched ? (CHANNEL_LOGOS[sched.ch] || '') : '';
+    const playKey  = sched ? PLAY_CHANNEL[sched.ch] : null;
+    const playLogo = playKey ? (CHANNEL_LOGOS[playKey] || '') : '';
+    const timeStr  = sched ? getDatetimeStr(sched) : '';
     return `<div class="${cls}">
       <div style="flex:1;min-width:0">
+        <div class="match-time-row">
+          <span>${timeStr}</span>
+          ${chLogo ? `<img class="ch-logo-sm" src="${chLogo}" alt="${sched.ch}">` : ''}
+          ${playLogo ? `<img class="ch-logo-sm" src="${playLogo}" alt="play">` : ''}
+        </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
           <span class="mtip">${m.svar || '–'}</span>
