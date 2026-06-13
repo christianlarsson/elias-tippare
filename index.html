@@ -615,7 +615,6 @@ function renderNextMatch(scores) {
       <span class="next-match-time">${timeStr}</span>
       <span class="ch-logos">
         ${chLogo ? `<img class="ch-logo" src="${chLogo}" alt="${match.ch}">` : ''}
-        ${playLogo ? `<img class="ch-logo" src="${playLogo}" alt="play">` : ''}
       </span>
     </div>
     <div class="next-match-dist">
@@ -722,7 +721,6 @@ function showDetail(namn) {
         <div class="match-time-row">
           <span>${timeStr}</span>
           ${chLogo ? `<img class="ch-logo-sm" src="${chLogo}" alt="${sched.ch}">` : ''}
-          ${playLogo ? `<img class="ch-logo-sm" src="${playLogo}" alt="play">` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="mname">${esc(cachedMatchNames[i] || (i+1) + '. Match')}</span>
