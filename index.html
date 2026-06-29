@@ -734,7 +734,42 @@ function renderNextMatch(scores) {
   }
 
   if (nextIdx === -1) {
-    wrap.style.display = 'none';
+    // Alla 13 matcher spelade – visa skytteliga topp 3 + målprognos
+    if (liveScorers.length > 0) {
+      // Gruppera spelare per målantal, visa topp 3 unika placeringar
+      const medals = ['🥇','🥈','🥉'];
+      const groups = [];
+      for (const s of liveScorers) {
+        const last = groups[groups.length - 1];
+        if (last && last.goals === s.goals) {
+          last.players.push(s.name);
+        } else {
+          if (groups.length >= 3) break;
+          groups.push({ goals: s.goals, players: [s.name] });
+        }
+      }
+
+      const scorerRows = groups.map((g, i) =>
+        `<div class="next-match-meta" style="margin-bottom:4px">
+          <span style="font-size:1.1rem">${medals[i]}</span>
+          <span style="font-weight:600;color:var(--text);text-transform:capitalize">${g.players.map(p => esc(p)).join(', ')}</span>
+          <span style="color:var(--text-muted);margin-left:auto">${g.goals} mål</span>
+        </div>`
+      ).join('');
+
+      const prognosStr = liveGoalPrognosis
+        ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--card-border);font-size:.85rem;color:var(--text-muted)">Prognos totalt antal mål: <strong style="color:var(--text)">${Math.round(liveGoalPrognosis)}</strong></div>`
+        : '';
+
+      wrap.style.display = 'block';
+      wrap.innerHTML = `<div class="next-match-card">
+        <div class="next-match-label">⚽ Skytteliga</div>
+        ${scorerRows}
+        ${prognosStr}
+      </div>`;
+    } else {
+      wrap.style.display = 'none';
+    }
     return;
   }
 
@@ -812,7 +847,12 @@ function renderLeaderboard(scores, filter) {
           const team = tin === false ? '<s>' + esc(s.vmMastare) + '</s>' : esc(s.vmMastare);
           const rank = getScorerRank(s.skyttekung);
           const scorer = esc(s.skyttekung) + (rank ? ' #' + rank : '');
-          return team + ' · ' + scorer + ' · ' + s.malGissning + ' mål';
+          let goalStr = s.malGissning + ' mål';
+          if (liveGoalPrognosis) {
+            const diff = Math.abs(s.malGissning - Math.round(liveGoalPrognosis));
+            goalStr += ' (-' + diff + ')';
+          }
+          return team + ' · ' + scorer + ' · ' + goalStr;
         })()}</span>
       </span>
       <span class="pts">${s.poang}<br><span class="pts-unit">rätt</span></span>
