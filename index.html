@@ -433,6 +433,59 @@ const LIVE_TEAMS_SHEET   = 'Kvar-i-turneringen';
 const LIVE_SCORERS_SHEET = 'Skytteligan';
 const LIVE_GOALS_SHEET   = 'Matchdata';
 
+const TEAM_NAME_MAP = {
+  "algeriet": "algeria",
+  "argentina": "argentina",
+  "australien": "australia",
+  "belgien": "belgium",
+  "bosnien och hercegovina": "bosnia and herzegovina",
+  "brasilien": "brazil",
+  "colombia": "colombia",
+  "curacao": "curaçao",
+  "curaçao": "curaçao",
+  "demokratiska republiken kongo": "dr congo",
+  "dr kongo": "dr congo",
+  "ecuador": "ecuador",
+  "egypten": "egypt",
+  "elfenbenskusten": "côte d'ivoire",
+  "england": "england",
+  "frankrike": "france",
+  "ghana": "ghana",
+  "haiti": "haiti",
+  "irak": "iraq",
+  "iran": "iran",
+  "japan": "japan",
+  "jordanien": "jordan",
+  "kanada": "canada",
+  "kap verde": "cape verde",
+  "kroatien": "croatia",
+  "marocko": "morocco",
+  "mexiko": "mexico",
+  "nederländerna": "netherlands",
+  "norge": "norway",
+  "nya zeeland": "new zealand",
+  "panama": "panama",
+  "paraguay": "paraguay",
+  "portugal": "portugal",
+  "qatar": "qatar",
+  "saudiarabien": "saudi arabia",
+  "schweiz": "switzerland",
+  "senegal": "senegal",
+  "skottland": "scotland",
+  "spanien": "spain",
+  "sverige": "sweden",
+  "sydafrika": "south africa",
+  "sydkorea": "korea republic",
+  "tjeckien": "czech republic",
+  "tunisien": "tunisia",
+  "turkiet": "turkey",
+  "tyskland": "germany",
+  "uruguay": "uruguay",
+  "usa": "united states",
+  "uzbekistan": "uzbekistan",
+  "österrike": "austria",
+};
+
 // ── CONFIG ──────────────────────────────────────────────────
 const SHEET_ID    = '1ZVTnUpKejCBqqD7a04AOqB8eeLU5YTULq9Z6VHza_EY';
 const SVAR_SHEET  = 'Formulärsvar 1';
@@ -532,7 +585,10 @@ async function fetchLiveData() {
 
 function isTeamStillIn(name) {
   if (!name || liveTeams.size === 0) return null;
-  return liveTeams.has(name.toLowerCase());
+  const sv = name.toLowerCase();
+  const en = TEAM_NAME_MAP[sv] || sv;
+  // Check both Swedish and English name
+  return liveTeams.has(en) || liveTeams.has(sv);
 }
 
 function getScorerRank(name) {
