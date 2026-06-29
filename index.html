@@ -570,7 +570,8 @@ async function fetchLiveData() {
     const scorersRows = parseCSV(scorersText).slice(2);
     liveScorers = scorersRows
       .filter(r => r[1])
-      .map(r => ({ rank: parseInt(r[0])||999, name: (r[1]||'').trim().toLowerCase() }));
+      .map(r => ({ rank: parseInt(r[0])||999, name: (r[1]||'').trim().toLowerCase(), goals: parseInt(r[3])||0 }))
+      .filter(s => s.goals > 0);
 
     // Målprognos
     const goalsText = await (await fetch(liveSheetUrl(LIVE_GOALS_SHEET))).text();
