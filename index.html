@@ -427,6 +427,12 @@ const CHANNEL_LOGOS = {
 const PLAY_CHANNEL = {"svt1": "svtplay", "svt2": "svtplay", "tv4": "tv4play"};
 const CHANNEL_NAMES = {"svt1": "SVT1", "svt2": "SVT2", "tv4": "TV4"};
 
+// ── LIVE DATA CONFIG ─────────────────────────────────────────
+const LIVE_SHEET_ID      = '1iU7hAHllyqBgLs16EaOfbgRD9cwdqab9HrmuKqxnFbA';
+const LIVE_TEAMS_SHEET   = 'Kvar-i-turneringen';
+const LIVE_SCORERS_SHEET = 'Skytteligan';
+const LIVE_GOALS_SHEET   = 'Matchdata';
+
 // ── CONFIG ──────────────────────────────────────────────────
 const SHEET_ID    = '1ZVTnUpKejCBqqD7a04AOqB8eeLU5YTULq9Z6VHza_EY';
 const SVAR_SHEET  = 'Formulärsvar 1';
@@ -434,11 +440,16 @@ const FACIT_SHEET = 'Facit';
 const MATCH_COUNT = 13;
 
 const COL_NAMN        = 2;
+const COL_TIPSNUMMER  = 3;
 const COL_MATCH_START = 4;
 const COL_VMMASTARE   = 17;
 const COL_SKYTTEKUNG  = 18;
 const COL_MAL         = 19;
 // ────────────────────────────────────────────────────────────
+
+function liveSheetUrl(sheetName) {
+  return `https://docs.google.com/spreadsheets/d/${LIVE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cachebust=${Date.now()}`;
+}
 
 function sheetUrl(sheetName) {
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cachebust=${Date.now()}`;
@@ -486,10 +497,50 @@ function normalizeVal(s, emptyMeansX) {
   return v;
 }
 
-let cachedScores     = [];
+let cachedScores      = [];
+let liveTeams         = new Set();
+let liveScorers       = [];
+let liveGoalPrognosis = null;
 let cachedMatchNames = [];
 let cachedFacitRow   = [];
 let currentFilter    = '';
+
+async function fetchLiveData() {
+  try {
+    // Lag kvar i turneringen
+    const teamsText = await (await fetch(liveSheetUrl(LIVE_TEAMS_SHEET))).text();
+    const teamsRows = parseCSV(teamsText).slice(2); // rad 1=tidsstämpel, rad 2=rubrik
+    liveTeams = new Set(teamsRows.map(r => (r[0]||'').trim().toLowerCase()).filter(Boolean));
+
+    // Skytteligan
+    const scorersText = await (await fetch(liveSheetUrl(LIVE_SCORERS_SHEET))).text();
+    const scorersRows = parseCSV(scorersText).slice(2);
+    liveScorers = scorersRows
+      .filter(r => r[1])
+      .map(r => ({ rank: parseInt(r[0])||999, name: (r[1]||'').trim().toLowerCase() }));
+
+    // Målprognos
+    const goalsText = await (await fetch(liveSheetUrl(LIVE_GOALS_SHEET))).text();
+    const goalsRows = parseCSV(goalsText).slice(2);
+    const prognosRow = goalsRows.find(r => (r[0]||'').includes('Prognos'));
+    liveGoalPrognosis = prognosRow ? parseFloat(prognosRow[1]) : null;
+
+  } catch(e) {
+    console.warn('Live-data:', e.message);
+  }
+}
+
+function isTeamStillIn(name) {
+  if (!name || liveTeams.size === 0) return null;
+  return liveTeams.has(name.toLowerCase());
+}
+
+function getScorerRank(name) {
+  if (!name || liveScorers.length === 0) return null;
+  const n = name.toLowerCase();
+  const found = liveScorers.find(s => s.name.includes(n) || n.includes(s.name));
+  return found ? found.rank : null;
+}
 
 async function loadData() {
   const [svarRows, facitRows] = await Promise.all([
@@ -514,8 +565,10 @@ async function loadData() {
   const results = [];
   for (let i = 1; i < svarRows.length; i++) {
     const row  = svarRows[i];
-    const namn = (row[COL_NAMN] || '').trim();
+    const namn       = (row[COL_NAMN] || '').trim();
     if (!namn) continue;
+    const tipsnr     = (row[COL_TIPSNUMMER] || '').trim();
+    const uniqueKey  = tipsnr ? namn + '||' + tipsnr : namn;
 
     let poang = 0;
     const matchDetaljer = [];
@@ -534,7 +587,7 @@ async function loadData() {
     const malDiff     = isNaN(malGissning) || isNaN(facitMal) ? 999999 : Math.abs(malGissning - facitMal);
 
     results.push({
-      namn, poang, matchDetaljer,
+      namn, uniqueKey, tipsnr, poang, matchDetaljer,
       vmMastare, skyttekung, malGissning, malDiff,
       rattVmMastare:   facitMastare    !== '' && vmMastare   === facitMastare,
       rattSkyttekung:  facitSkyttekung !== '' && skyttekung  === facitSkyttekung,
@@ -543,8 +596,25 @@ async function loadData() {
 
   results.sort((a, b) => {
     if (b.poang !== a.poang) return b.poang - a.poang;
-    if (a.rattVmMastare  !== b.rattVmMastare)  return b.rattVmMastare  - a.rattVmMastare;
-    if (a.rattSkyttekung !== b.rattSkyttekung) return b.rattSkyttekung - a.rattSkyttekung;
+
+    // TB1: Lag kvar i turneringen
+    const aIn = isTeamStillIn(a.vmMastare);
+    const bIn = isTeamStillIn(b.vmMastare);
+    if (aIn !== bIn) {
+      if (aIn === true) return -1;
+      if (bIn === true) return 1;
+    }
+
+    // TB2: Placering i skytteligan (lägre = bättre)
+    const aRank = getScorerRank(a.skyttekung) || 999;
+    const bRank = getScorerRank(b.skyttekung) || 999;
+    if (aRank !== bRank) return aRank - bRank;
+
+    // TB3: Närmast antal mål (mot prognos om tillgänglig)
+    const target = liveGoalPrognosis || null;
+    if (target) {
+      return Math.abs(a.malGissning - target) - Math.abs(b.malGissning - target);
+    }
     return a.malDiff - b.malDiff;
   });
 
@@ -665,6 +735,9 @@ function renderLeaderboard(scores, filter) {
     ? scores.filter(s => s.namn.toLowerCase().includes(currentFilter.toLowerCase()))
     : scores;
 
+  const nameCount = {};
+  filtered.forEach(s => { nameCount[s.namn] = (nameCount[s.namn] || 0) + 1; });
+
   if (filtered.length === 0) {
     lb.innerHTML = `<div class="empty">${currentFilter ? 'Ingen med det namnet hittades.' : 'Inga svar inkomna än.'}</div>`;
     return;
@@ -674,11 +747,17 @@ function renderLeaderboard(scores, filter) {
     const medal    = getMedal(s.rank, s.poang);
     const topClass = getTopClass(s.rank, s.poang);
     const rankDisp = medal || s.rank;
-    return `<div class="row${topClass}" onclick="showDetail('${esc(s.namn)}')">
+    return `<div class="row${topClass}" onclick="showDetail('${esc(s.uniqueKey)}')">
       <span class="rank">${rankDisp}</span>
       <span class="info">
-        <span class="namn">${esc(s.namn)}</span>
-        <span class="sub">${esc(s.vmMastare)} · ${esc(s.skyttekung)} · ${s.malGissning} mål</span>
+        <span class="namn">${esc(s.namn)}${nameCount[s.namn] > 1 && s.tipsnr ? ' <span style="font-size:.75em;opacity:.6">('+esc(s.tipsnr)+')</span>' : ''}</span>
+        <span class="sub">${(() => {
+          const tin = isTeamStillIn(s.vmMastare);
+          const team = tin === false ? '<s>' + esc(s.vmMastare) + '</s>' : esc(s.vmMastare);
+          const rank = getScorerRank(s.skyttekung);
+          const scorer = esc(s.skyttekung) + (rank ? ' #' + rank : '');
+          return team + ' · ' + scorer + ' · ' + s.malGissning + ' mål';
+        })()}</span>
       </span>
       <span class="pts">${s.poang}<br><span class="pts-unit">rätt</span></span>
     </div>`;
@@ -704,7 +783,7 @@ function calcDist(matchIndex) {
 }
 
 function showDetail(namn) {
-  const s = cachedScores.find(x => x.namn === namn);
+  const s = cachedScores.find(x => x.uniqueKey === namn);
   if (!s) return;
 
   const lb  = document.getElementById('leaderboard');
@@ -776,6 +855,7 @@ function showDetail(namn) {
 
 async function refresh() {
   try {
+    await fetchLiveData();
     const scores = await loadData();
     document.getElementById('status').style.display = 'none';
     document.getElementById('updated').textContent  = scores.length;
