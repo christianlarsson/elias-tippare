@@ -761,10 +761,16 @@ function renderNextMatch(scores) {
         showGroups = groups.slice(0, 3); // Alla tre platser
       }
 
+      const truncateName = name => {
+        const parts = name.trim().split(' ');
+        if (parts.length < 2) return name;
+        return parts[0][0].toUpperCase() + '.' + parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      };
+
       const scorerRows = showGroups.map((g, i) =>
         `<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:5px;font-size:.85rem">
           <span>${medals[i]}</span>
-          <span style="color:var(--text);text-transform:capitalize;flex:1">${g.players.map(p => esc(p)).join(', ')}</span>
+          <span style="color:var(--text);flex:1">${g.players.map(p => esc(truncateName(p))).join(', ')}</span>
           <span style="color:var(--text-muted);white-space:nowrap">${g.goals} mål</span>
         </div>`
       ).join('');
@@ -820,6 +826,13 @@ function renderNextMatch(scores) {
   </div>`;
 }
 
+function truncateName(name) {
+  if (!name) return name;
+  const parts = name.trim().split(' ');
+  if (parts.length < 2) return name;
+  return parts[0][0].toUpperCase() + '.' + parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+
 function renderLeaderboard(scores, filter) {
   if (filter !== undefined) currentFilter = filter;
 
@@ -858,7 +871,7 @@ function renderLeaderboard(scores, filter) {
           const tin = isTeamStillIn(s.vmMastare);
           const team = tin === false ? '<s>' + esc(s.vmMastare) + '</s>' : esc(s.vmMastare);
           const rank = getScorerRank(s.skyttekung);
-          const scorer = esc(s.skyttekung) + (rank ? ' #' + rank : '');
+          const scorer = esc(truncateName(s.skyttekung)) + (rank ? ' #' + rank : '');
           let goalStr = s.malGissning + ' mål';
           if (liveGoalPrognosis) {
             const diff = Math.abs(s.malGissning - Math.round(liveGoalPrognosis));
