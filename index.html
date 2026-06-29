@@ -737,7 +737,7 @@ function renderNextMatch(scores) {
   if (nextIdx === -1) {
     // Alla 13 matcher spelade – visa skytteliga topp 3 + målprognos
     if (liveScorers.length > 0) {
-      // Gruppera spelare per målantal, visa topp 3 unika placeringar
+      // Gruppera spelare per målantal
       const medals = ['🥇','🥈','🥉'];
       const groups = [];
       for (const s of liveScorers) {
@@ -750,11 +750,22 @@ function renderNextMatch(scores) {
         }
       }
 
-      const scorerRows = groups.map((g, i) =>
-        `<div class="next-match-meta" style="margin-bottom:4px">
-          <span style="font-size:1.1rem">${medals[i]}</span>
-          <span style="font-weight:600;color:var(--text);text-transform:capitalize">${g.players.map(p => esc(p)).join(', ')}</span>
-          <span style="color:var(--text-muted);margin-left:auto">${g.goals} mål</span>
+      // Begränsa visning baserat på antal spelare
+      const totalTop2 = (groups[0]?.players.length||0) + (groups[1]?.players.length||0);
+      let showGroups;
+      if ((groups[0]?.players.length||0) > 3) {
+        showGroups = groups.slice(0, 1); // Bara 1:a om fler än 3 delar den
+      } else if (totalTop2 > 3) {
+        showGroups = groups.slice(0, 2); // Bara 1:a och 2:a om fler än 3 totalt
+      } else {
+        showGroups = groups.slice(0, 3); // Alla tre platser
+      }
+
+      const scorerRows = showGroups.map((g, i) =>
+        `<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:5px;font-size:.85rem">
+          <span>${medals[i]}</span>
+          <span style="color:var(--text);text-transform:capitalize;flex:1">${g.players.map(p => esc(p)).join(', ')}</span>
+          <span style="color:var(--text-muted);white-space:nowrap">${g.goals} mål</span>
         </div>`
       ).join('');
 
@@ -764,7 +775,7 @@ function renderNextMatch(scores) {
 
       wrap.style.display = 'block';
       wrap.innerHTML = `<div class="next-match-card">
-        <div class="next-match-label">⚽ Skytteliga</div>
+        <div class="next-match-label">⚽ Skytteligatoppen</div>
         ${scorerRows}
         ${prognosStr}
       </div>`;
